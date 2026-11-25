@@ -35,7 +35,7 @@ bash cmd-opencart-project.sh myshop --install --add-users --sample-data
 | `--add-users` | With `--install`: the default accounts: `administrator` (the Administrator group), `editor` (a "Catalog editor" group with the catalog's screens only) and the customer `customer@example.com` with an address in London. |
 | `--sample-data` | With `--install`: the payment by bank transfer beside the demo's cash on delivery, and the coupon `WEBSHIP10` (10% off; the demo's coupons are disabled and expired). |
 | `--version <x>` | The OpenCart 4 release (`latest` by default). |
-| `--php-version <x>` | The PHP of the project container (8.3 by default; OpenCart 4.1 runs on 8.1 and later). |
+| `--php-version <x>` | The PHP of the project container: 8.3 (the default), 8.2 or 8.1. |
 | `--launch` | Opens the shop when it is ready. |
 | `--runtime <name>` | The container runtime: `ddev` (the default), `docker`, `podman`, `kubernetes`, `lando` or `docksal`. |
 
@@ -44,8 +44,11 @@ On DDEV the shop answers at `https://<name>.ddev.site/`, its administration at `
 on that runtime instead, at the address the build prints (`http://127.0.0.1:<port>`, the node's address and a port, or
 `http://<name>.docksal.site`): never write a `ddev.site` address for such a shop. The project is of the type `php`
 with the release's `upload/` folder as its docroot; the container tool writes nothing of the database settings, the
-installer is given the container's own (`db`). The builder **deletes a project of the same name first**: a build is
-a clean slate, so never point it at a shop somebody still needs.
+installer is given the container's own (`db`). The workspace account is named "Workspace Owner" in the
+administration (a password longer than the installer's 20 characters is set once the shop is installed), and the
+shop's mail goes to the runtime's mail catcher: OpenCart installs with no mail engine, and the builder sets PHP's mail.
+The builder **deletes a project of the same name first**: a build is a clean slate, so never point it at a shop
+somebody still needs.
 
 The builder leaves `.ddev/config.opencart.yaml` in the project: the plugin's claim on it. With it the row's Tests
 menu on the dashboard offers the shop's test users, the same as `bash cmd-tools-add-users.sh myshop opencart`.

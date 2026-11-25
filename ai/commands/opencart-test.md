@@ -18,8 +18,8 @@ the whole suite runs. With no site at all, stop and ask for one: list the candid
 `ls -d ~/workspace/*/*/upload/admin/config.php`.
 
 The workspace is container-based (DDEV by default) and everything below runs in the site's
-container through the workspace's own command. Never run `npx cucumber-js`, `npx playwright`,
-`php` or `wp` on the host for a site.
+container through the workspace's own command. Never run `npx cucumber-js`, `npx playwright`
+or `php` on the host for a site.
 
 ## 1. Find the site
 
@@ -55,7 +55,7 @@ bash cmd-tools-testing.sh <site> --dry-run --tags "@critical"                   
 ```
 
 Use the form that matches what was asked. An `Undefined` or `Ambiguous` step is a finding: name
-the feature, the line and the phrase, show the closest phrase the packs define
+the feature, the line and the phrase, show the closest phrase the pack defines
 (`grep -hE "^(Given|When|Then)\(" <site>/node_modules/@webship-js/opencart-steps/tests/step-definitions/*.steps.js`),
 and stop before the real run.
 

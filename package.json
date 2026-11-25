@@ -1,0 +1,103 @@
+{
+  "name": "@webship.co/workspace-opencart",
+  "version": "1.0.0",
+  "description": "OpenCart for Webship Workspace: the builder (`cmd-opencart-project.sh`) in every sites folder, a shop installed with OpenCart's own installer and its demo catalog, the default accounts (an administrator, a catalog editor, a customer), the sample data (bank transfer and a coupon), the shop's tool (`cmd-tools-opencart-cli.sh`), the OpenCart step pack wired into the testing setup, and its AI items in their folders: two agents, a skill, a command and two prompts.",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "license": "ISC",
+  "engines": {
+    "node": ">=24"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/webship/workspace-opencart.git"
+  },
+  "files": [
+    "dist/src",
+    "ai",
+    "commands",
+    "features",
+    "scripts",
+    "testing",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepare": "npm run build",
+    "test": "npm run build && node --test dist/tests/*.test.js",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "workspacePlugin": {
+    "name": "opencart",
+    "label": "OpenCart",
+    "needs": [
+      [
+        "dev",
+        "test",
+        "sandboxes",
+        "demos"
+      ],
+      "ai-agents",
+      "ai-skills",
+      "ai-commands",
+      "ai-prompts"
+    ],
+    "commands": {
+      "types": [
+        "sites"
+      ],
+      "workspaces": [
+        "dev",
+        "test",
+        "sandboxes",
+        "demos"
+      ],
+      "files": [
+        "commands/cmd-opencart-project.sh",
+        "commands/cmd-tools-opencart-cli.sh"
+      ]
+    },
+    "scripts": {
+      "functions": [
+        "scripts/functions/fun-opencart.sh"
+      ],
+      "args": [
+        "scripts/args/arg-opencart.sh",
+        "scripts/args/arg-opencart-cli.sh"
+      ],
+      "machine": [
+        "testing/shop.feature",
+        "scripts/shop-site.php"
+      ]
+    },
+    "ai": {
+      "agents": [
+        "ai/agents/opencart-site-builder.md",
+        "ai/agents/opencart-tester.md"
+      ],
+      "skills": [
+        "ai/skills/opencart-scenarios"
+      ],
+      "commands": [
+        "ai/commands/opencart-test.md"
+      ],
+      "prompts": [
+        "ai/prompts/opencart-build-and-test.md",
+        "ai/prompts/opencart-checkout-round.md"
+      ]
+    },
+    "features": [
+      "features/opencart.feature",
+      "features/opencart-runtimes.feature"
+    ],
+    "featuresSite": "cmd-opencart-project.sh ci-opencart --install --add-users --sample-data --runtime docker"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@webship.co/workspace-plugin-api": "^1.0.11",
+    "typescript": "^5.9.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

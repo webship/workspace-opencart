@@ -170,6 +170,29 @@ function opencart_shop_site() {
   return ${status} ;
 }
 
+# Give the installer's account (user 1, the workspace account) the workspace password, stored as the shop stores one
+# (PHP's password_hash), with the database settings of the shop's own config.php. For a password longer than the 20
+# characters the installer takes; the shop's own forms take up to 40. Run in the project folder; the script is written
+# into the docroot for the run, and removed.
+function opencart_set_owner_password() {
+  local root="$1" docroot status ;
+  docroot="$(opencart_docroot "$(pwd)")" ;
+  cat > "${docroot:+${docroot}/}.webship-owner.php" <<'PHPEOF'
+<?php
+// The password of the workspace account, user 1 of the shop (written by the OpenCart plugin of the Webship Workspace).
+require __DIR__ . '/config.php';
+$db = new mysqli(DB_HOSTNAME, DB_USERNAME, DB_PASSWORD, DB_DATABASE, (int)DB_PORT);
+$hash = password_hash((string)getenv('WEBSHIP_OWNER_PASSWORD'), PASSWORD_DEFAULT);
+$query = $db->prepare('UPDATE `' . DB_PREFIX . 'user` SET `password` = ? WHERE `user_id` = 1');
+$query->bind_param('s', $hash);
+exit($query->execute() && $db->affected_rows === 1 ? 0 : 1);
+PHPEOF
+  ddev exec -d "${root}" "WEBSHIP_OWNER_PASSWORD=$(printf '%q' "${account_pass}") php .webship-owner.php" < /dev/null ;
+  status=$? ;
+  rm -f "${docroot:+${docroot}/}.webship-owner.php" ;
+  return ${status} ;
+}
+
 # The release of OpenCart to download: the number asked for, or the newest stable one of the major line this plugin
 # builds, from the project's releases (read in the container; the proven release when the list cannot be read).
 function opencart_release() {
@@ -207,14 +230,17 @@ function opencart_build() {
     echo "This builder makes an OpenCart ${OPENCART_MAJOR} shop: --version is latest or a ${OPENCART_MAJOR}.x number such as ${OPENCART_PROVEN_VERSION}." ;
     exit 1 ;
   fi
-  # The installer takes a user name of 3 to 20 characters and a password of 5 to 20: a workspace account it would
-  # refuse is said before anything is built.
+  # The installer takes a user name of 3 to 20 characters and a password of 5 to 20; the shop's own forms take a
+  # password of up to 40, so a longer one is set once the shop is installed. A workspace account the shop would refuse
+  # is said before anything is built.
+  local install_pass="${account_pass}" ;
   if [ "${INSTALL}" == 'yes' ] ; then
-    if [ "${#account_name}" -lt 3 ] || [ "${#account_name}" -gt 20 ] || [ "${#account_pass}" -lt 5 ] || [ "${#account_pass}" -gt 20 ] || [[ ! "${account_mail}" == ?*@?*.?* ]] ; then
-      echo "The OpenCart installer takes a user name of 3 to 20 characters, a password of 5 to 20 and an e-mail address, and the workspace account does not fit." ;
+    if [ "${#account_name}" -lt 3 ] || [ "${#account_name}" -gt 20 ] || [ "${#account_pass}" -lt 5 ] || [ "${#account_pass}" -gt 40 ] || [[ ! "${account_mail}" == ?*@?*.?* ]] ; then
+      echo "OpenCart takes a user name of 3 to 20 characters, a password of 5 to 40 and an e-mail address, and the workspace account does not fit." ;
       echo "Change account: in core/config/settings.yml, or build without --install." ;
       exit 1 ;
     fi
+    [ "${#account_pass}" -gt 20 ] && install_pass="Ws-$(date +%s%N | sha256sum | head -c 16)" ;
   fi
 
   cd ${WORKSPACE_ROOT}/${doc_name} || exit 1 ;
@@ -248,7 +274,7 @@ function opencart_build() {
     # The container's own database values, the same in every project: nothing personal is written.
     echo "Installing the shop with the demo catalog." ;
     ddev exec -d "${root}" "php install/cli_install.php install \
-      --username $(printf '%q' "${account_name}") --email $(printf '%q' "${account_mail}") --password $(printf '%q' "${account_pass}") \
+      --username $(printf '%q' "${account_name}") --email $(printf '%q' "${account_mail}") --password $(printf '%q' "${install_pass}") \
       --http_server $(printf '%q' "${base_url}/") --language en-gb \
       --db_driver mysqli --db_hostname db --db_username db --db_password db --db_database db --db_port 3306 --db_prefix oc_" < /dev/null \
       || { echo "The OpenCart installer failed." ; exit 1 ; } ;
@@ -258,6 +284,10 @@ function opencart_build() {
     # And it sets no mail engine, so the shop sends nothing: PHP's mail() it is ("Mail" in its settings), which the
     # container hands to the runtime's mail catcher (Mailpit on DDEV), so no mail leaves the machine.
     ddev mysql -e "UPDATE oc_user SET firstname='Workspace', lastname='Owner' WHERE user_id=1 ; UPDATE oc_setting SET value='mail' WHERE store_id=0 AND \`key\`='config_mail_engine'" < /dev/null ;
+    # A workspace password longer than the installer takes is the account's now, stored the way the shop stores one.
+    if [ "${install_pass}" != "${account_pass}" ] ; then
+      opencart_set_owner_password "${root}" || { echo "The workspace account's password could not be set in the shop." ; exit 1 ; } ;
+    fi
 
     if [ "${ADD_USERS}" == 'yes' ] ; then
       set_opencart_users ;

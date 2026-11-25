@@ -228,10 +228,10 @@ test('a version of another major line, or a workspace account the installer woul
   assert.strictEqual(r.status, 1);
   assert.match(r.stdout, /This builder makes an OpenCart 4 shop/);
   for (const account of ['account_name=ab account_pass=Long.enough1 account_mail=a@example.com', 'account_name=webmaster account_pass=abcd account_mail=a@example.com',
-    'account_name=webmaster account_pass=Twenty-one-characters account_mail=a@example.com', 'account_name=webmaster account_pass=Long.enough1 account_mail=nobody']) {
+    'account_name=webmaster account_pass=Forty-one-characters-are-more-than-it-has account_mail=a@example.com', 'account_name=webmaster account_pass=Long.enough1 account_mail=nobody']) {
     r = bash(`VERSION=latest ; INSTALL=yes ; ${account} ; trim_project_name() { :; } ; opencart_build`, env);
     assert.strictEqual(r.status, 1, account);
-    assert.match(r.stdout, /a user name of 3 to 20 characters, a password of 5 to 20 and an e-mail address/, account);
+    assert.match(r.stdout, /a user name of 3 to 20 characters, a password of 5 to 40 and an e-mail address/, account);
   }
   assert.ok(!fs.existsSync(log), 'the container tool was not called');
   assert.ok(!fs.existsSync(path.join(p.root, 'dev', 'shop2')), 'no folder was made');
@@ -327,6 +327,20 @@ test('on DDEV the shop is built in order: a php project, the claim, the release,
   assert.match(b.r.stdout, /Go to https:\/\/shop1\.ddev\.site\/, and https:\/\/shop1\.ddev\.site\/admin\/ as webmaster/);
   assert.ok(!b.calls.includes('ddev exec pwd'), 'DDEV is not asked where the project is');
   assert.deepStrictEqual(build('ddev').calls, b.calls, 'the same commands with the layer as without it');
+});
+
+test('a workspace password longer than the installer takes is set once the shop is installed, the way the shop stores one', () => {
+  const b = build('', { account_pass: 'Ci-Webship-Workspace-2026' });
+  assert.strictEqual(b.r.status, 0, b.r.stderr + b.r.stdout);
+  const at = (re: RegExp) => b.calls.findIndex((c) => re.test(c));
+  const install = b.calls[at(/cli_install\.php install/)];
+  const given = (install.match(/ --password (\S+) /) || [])[1] || '';
+  assert.ok(given.length >= 5 && given.length <= 20 && given !== 'Ci-Webship-Workspace-2026', `the installer gets a password it takes: ${given}`);
+  assert.ok(at(/^ddev exec -d \/var\/www\/html\/upload WEBSHIP_OWNER_PASSWORD=Ci-Webship-Workspace-2026 php \.webship-owner\.php$/) > at(/cli_install\.php install/), 'then the account gets the workspace password');
+  assert.deepStrictEqual(fs.readdirSync(path.join(b.dir, 'upload')).filter((f) => f.startsWith('.webship-')), [], 'and the script is gone from the docroot');
+  const short = build('');
+  assert.ok(!short.calls.some((c) => c.includes('.webship-owner.php')), 'a password the installer takes is given to it as it is');
+  assert.ok(short.calls.some((c) => c.includes(' --password Change_Me.123 ')));
 });
 
 test('--add-users and --sample-data write the accounts, then the payment and the coupon, with the script of the shop in its docroot', () => {

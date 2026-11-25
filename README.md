@@ -100,12 +100,15 @@ bash cmd-opencart-project.sh myshop --install --add-users --sample-data
 On DDEV the shop answers at `https://myshop.ddev.site/`, its administration at `/admin/`, the mail catcher at
 `https://myshop.ddev.site:8026`. The container tool has no project type for OpenCart, so a shop is a `php` project
 whose docroot is the release's `upload/` folder; the installer is given the container's own database values (`db`),
-and nothing personal is written; the workspace account it makes is named "Workspace Owner" in the administration.
-OpenCart installs with no mail engine, so it would send nothing: the builder sets PHP's mail ("Mail" in the shop's
-settings), which the container hands to the runtime's mail catcher, so the shop's mail (an order's confirmation, a
-forgotten password) is in the mailbox and none leaves the machine. The installer takes a user name of 3 to 20 characters, a password of 5 to 20 and an
-e-mail address, so a workspace account it would refuse is said before anything is built. A project of the same name
-is deleted first.
+and nothing personal is written. A project of the same name is deleted first.
+
+- **The workspace account** is the installer's, named "Workspace Owner" in the administration. The installer takes a
+  user name of 3 to 20 characters, a password of 5 to 20 and an e-mail address; the shop's own forms take a password
+  of up to 40, so a longer workspace password is set once the shop is installed (stored as the shop stores one). A
+  workspace account the shop would refuse is said before anything is built.
+- **The mail.** OpenCart installs with no mail engine, so it would send nothing: the builder sets PHP's mail ("Mail"
+  in the shop's settings), which the container hands to the runtime's mail catcher. The shop's mail (an order's
+  confirmation, a forgotten password) is in the mailbox, and none leaves the machine.
 
 Nothing paid and no account anywhere: the open-source release from the project's releases, no extension of the
 marketplace, the theme the release comes with, and the sample data written by OpenCart's own models.
